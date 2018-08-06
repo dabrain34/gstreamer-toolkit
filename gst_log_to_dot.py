@@ -1,5 +1,5 @@
 # usage :
-# $ cat file.log | python gobj-log-2-graph.py > mygraph.dot
+# $ python gobj-log-2-graph.py file.log mygraph.dot
 # $ dot -Tsvg mygraph.dot mygraph.svg
 #
 # if something:
@@ -8,6 +8,7 @@
 
 import re
 import fileinput
+import sys
 
 # 'obj' : 'parent'
 
@@ -20,6 +21,8 @@ indent_char = '\t'
 class Config:
     has_playbin = False
     root_bin = 'pipeline0'
+    extra_root_bin_comments = ''
+
 config = Config() 
 
 def new_element_in_graph (element):
@@ -116,8 +119,8 @@ def format_gst_line(line):
     line = tab.pop()
     return line
 
-def parse_file():
-  for line in fileinput.input():
+def parse_file(filename):
+  for line in fileinput.input([filename]):
       mobj = re.match(r".*linked.*successful", line)
       #get pads
       if mobj:
@@ -137,7 +140,7 @@ def parse_file():
         gst_element = tab[0].replace('adding element ','').strip()
         if gst_element == 'uridecodebin0':
           config.root_bin = gst_bin
-          print '///coucououcouc%s' % config.root_bin
+
         if new_bin (gst_bin):
           g_bins.append(gst_bin)
         g_elements[gst_element] = gst_bin
@@ -147,32 +150,63 @@ def parse_file():
           line = format_gst_line(mobj.group())
           if 'playbin' in line:
               config.has_playbin = True
-          print '///%s' % line
-          
+      #detect playbin URI
+      mobj = re.match(r".*set new uri to.*", line)
+      if mobj:
+          line = format_gst_line(mobj.group())
+          tab = line.split(' to ')
+          config.extra_root_bin_comments += '\\ncurrent-uri=\\"%s\\"' % tab[1]
 
 def show_elements():
+  elements ='\\lelements:'
   for e in g_elements:
-    print '//%s in bin %s' % (e,g_elements[e])
+    elements += '\\l%s in bin %s' % (e,g_elements[e])
+  return elements
 
 def show_pads():
+  pads ='\\lpads:'
   for p in g_pads:
-      print '//%s -> %s' % (p,g_pads[p])
+      pads += '\\l%s -> %s' % (p,g_pads[p])
+  return pads
 
-parse_file()
-if g_pads:
-  show_elements()
-  show_pads()
-  print 'digraph pipeline {'
-  print indent_char,'rankdir=LR;'
-  print indent_char,'fontname="sans";'
-  print indent_char,'fontsize="10";'
-  print indent_char,'labelloc=t;'
-  print indent_char,'nodesep=.1;'
-  print indent_char,'ranksep=.2;'
-  print indent_char,'label="<GstPipeline>\\n%s\\n[>]";' % config.root_bin
-  print indent_char,'node [style="filled,rounded", shape=box, fontsize="9", fontname="sans", margin="0.0,0.0"];'
-  print indent_char,'edge [labelfontsize="6", fontsize="9", fontname="monospace"];'
-  print '\n'
-  create_subgraph('')
-  create_connection('')
-  print '}'
+
+#Start of the program.
+input_filename = '-'
+try:
+  input_filename = sys.argv[1]
+except:
+  print "Use stdin as input method"
+  input_filename = '-'
+
+stdout = sys.stdout
+try:
+  f = open(sys.argv[2],'w')
+  sys.stdout = f
+except:
+  print "Use stdout as output method"
+  sys.stdout = stdout
+
+parse_file(input_filename)
+
+print 'digraph pipeline {'
+print indent_char,'rankdir=LR;'
+print indent_char,'fontname="sans";'
+print indent_char,'fontsize="10";'
+print indent_char,'labelloc=t;'
+print indent_char,'nodesep=.1;'
+print indent_char,'ranksep=.2;'
+print indent_char,'label="<GstPipeline>\\n%s\\n[>]%s";' % (config.root_bin, config.extra_root_bin_comments)
+print indent_char,'node [style="filled,rounded", shape=box, fontsize="9", fontname="sans", margin="0.0,0.0"];'
+print indent_char,'edge [labelfontsize="6", fontsize="9", fontname="monospace"];'
+print indent_char,'legend ['
+print indent_char,'pos="0,0!",'
+print indent_char,'margin="0.05,0.05",'
+print indent_char,'style="filled"'
+print indent_char, 'label="Legend\l%s\l%s"' %  (show_elements(), show_pads())
+print indent_char,'];'
+print '\n'
+
+# create the graph
+create_subgraph('')
+create_connection('')
+print '}'
