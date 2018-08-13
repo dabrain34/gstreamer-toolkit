@@ -13,21 +13,38 @@ import sys
 # 'obj' : 'parent'
 
 g_pads = {}
-g_elements = {}
+g_elements = []
+
 g_bins = []
 g_graph_elements = []
 indent_char = '\t'
 
+class Element:
+  name = None
+  bin_name = None
+  class_name = None
+
+  def __init__(self, name, bin_name = None, class_name=None):
+    self.name = name
+    self.bin_name = bin_name
+    self.class_name = class_name
+
 class Config:
     has_playbin = False
-    root_bin = 'pipeline0'
+    root_bin = Element('pipeline0',None)
     extra_root_bin_comments = ''
 
 config = Config() 
 
+def get_element_by_name(element_name):
+  for e in g_elements:
+    if e.name == element_name:
+      return e
+  return None
+
 def new_element_in_graph (element):
   for el in g_graph_elements:
-    if el == element:
+    if el.name == element.name:
       return False
   return True
 
@@ -42,14 +59,14 @@ def get_root_bins():
   if config.root_bin:
     root_bins.append(config.root_bin)
   for e in g_elements:
-    if g_elements[e] == '(NULL)':
+    if e.bin_name == '(NULL)':
       root_bins.append(e)
   return root_bins
 
 def get_elements_from_bin(bin_el):
   elements = []
   for e in g_elements:
-    if g_elements[e] == bin_el:
+    if e.bin_name == bin_el.name:
       elements.append(e)
   return elements
 
@@ -57,9 +74,9 @@ def get_pad_for_element(element):
   pads = []
   for p in g_pads:
     pad = p.split(':')[0]
-    if p.split(':')[0] == element:
+    if p.split(':')[0] == element.name:
       pads.append(p)
-    if g_pads[p].split(':')[0] == element:
+    if g_pads[p].split(':')[0] == element.name:
       pads.append(g_pads[p])
   return pads
       
@@ -85,12 +102,12 @@ def add_pad(pad_name, indent):
 def add_element (element, parent_bin, indent):
   if new_element_in_graph(element):
     body_indent = indent + indent;
-    print indent,'subgraph cluster_%s {' % beautify_name(element)
+    print indent,'subgraph cluster_%s {' % beautify_name(element.name)
     print body_indent,'fontname="Bitstream Vera Sans";'
     print body_indent,'fontsize="8";'
     print body_indent,'style="filled,rounded";'
     print body_indent,'color=black;'
-    print body_indent,'label="%s\\n[>]\\nparent=(GstPipeline) %s"' % (beautify_name(element), parent_bin)
+    print body_indent,'label="%s\\n[>]\\nparent=(GstPipeline) %s"' % (beautify_name(element.name), parent_bin.name)
     for p in get_pad_for_element(element):
       add_pad(p, indent + indent_char)
 
@@ -128,7 +145,6 @@ def parse_file(filename):
           tab = re.split(r'\t+', line)
           line = tab.pop()
           tab = line.split('and')
-          
           g_pads[tab[1].replace(', successful','').strip()] = tab[0].replace('linked','').strip()
       #get elements and bins
       mobj = re.match(r".*adding element.*", line)
@@ -139,11 +155,21 @@ def parse_file(filename):
         gst_bin = tab[1].replace('bin ','').strip()
         gst_element = tab[0].replace('adding element ','').strip()
         if gst_element == 'uridecodebin0':
-          config.root_bin = gst_bin
+          config.root_bin = Element(gst_bin, None)
 
         if new_bin (gst_bin):
           g_bins.append(gst_bin)
-        g_elements[gst_element] = gst_bin
+        el = get_element_by_name(gst_element)
+        if el is None:
+          g_elements.append(Element(gst_element, gst_bin))
+        else:
+          el.bin_name = gst_bin
+
+      #get elements name and type
+      #mobj = re.match(r".*creating element.*", line)
+      #if mobj:
+      #  line = format_gst_line(mobj.group())
+
       #detect playbin
       mobj = re.match(r".*created element.*", line)
       if mobj:
@@ -160,7 +186,7 @@ def parse_file(filename):
 def show_elements():
   elements ='\\lelements:'
   for e in g_elements:
-    elements += '\\l%s in bin %s' % (e,g_elements[e])
+    elements += '\\l%s in bin %s' % (e.name, e.bin_name)
   return elements
 
 def show_pads():
@@ -183,7 +209,6 @@ try:
   f = open(sys.argv[2],'w')
   sys.stdout = f
 except:
-  print "Use stdout as output method"
   sys.stdout = stdout
 
 parse_file(input_filename)
@@ -195,7 +220,7 @@ print indent_char,'fontsize="10";'
 print indent_char,'labelloc=t;'
 print indent_char,'nodesep=.1;'
 print indent_char,'ranksep=.2;'
-print indent_char,'label="<GstPipeline>\\n%s\\n[>]%s";' % (config.root_bin, config.extra_root_bin_comments)
+print indent_char,'label="<GstPipeline>\\n%s\\n[>]%s";' % (config.root_bin.name, config.extra_root_bin_comments)
 print indent_char,'node [style="filled,rounded", shape=box, fontsize="9", fontname="sans", margin="0.0,0.0"];'
 print indent_char,'edge [labelfontsize="6", fontsize="9", fontname="monospace"];'
 print indent_char,'legend ['
