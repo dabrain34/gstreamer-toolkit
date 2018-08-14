@@ -12,7 +12,7 @@ import sys
 
 # 'obj' : 'parent'
 
-g_pads = {}
+g_pads = []
 g_elements = []
 
 g_bins = []
@@ -29,6 +29,28 @@ class Element:
     self.bin_name = bin_name
     self.class_name = class_name
 
+class Pad:
+  name = None
+  element_name = None
+  peer_name = None
+  pad_details = None
+
+  def __init__(self, pad_name, peer_name = None, pad_details = None):
+    self.name = pad_name
+    self.element_name = pad_name.split(':')[0]
+    self.peer_name = peer_name
+    self.pad_details = pad_details
+
+  def is_sink(self):
+    if 'sink' in self.name:
+       return True
+    return False
+
+  def is_src(self):
+    if 'src' in self.name:
+       return True
+    return False
+
 class Config:
     has_playbin = False
     root_bin = Element('pipeline0',None)
@@ -40,6 +62,18 @@ def get_element_by_name(element_name):
   for e in g_elements:
     if e.name == element_name:
       return e
+  return None
+
+def get_pad_by_name(pad_name):
+  for p in g_pads:
+    if p.name == pad_name:
+      return p
+  return None
+
+def get_src_pad_by_element_name(el_name):
+  for p in g_pads:
+    if p.is_src() and p.element_name == el_name:
+      return p
   return None
 
 def new_element_in_graph (element):
@@ -73,11 +107,9 @@ def get_elements_from_bin(bin_el):
 def get_pad_for_element(element):
   pads = []
   for p in g_pads:
-    pad = p.split(':')[0]
-    if p.split(':')[0] == element.name:
+    pad = p.name.split(':')[0]
+    if p.name.split(':')[0] == element.name:
       pads.append(p)
-    if g_pads[p].split(':')[0] == element.name:
-      pads.append(g_pads[p])
   return pads
       
 def beautify_name(name):
@@ -85,18 +117,18 @@ def beautify_name(name):
     name = name.replace(r, '_')
   return name
 
-def add_connection(pad_sink, pad_src, indent, label=''):
+def add_connection(pad_src, pad_sink, indent, label=''):
   print indent,'%s -> %s %s' %(beautify_name(pad_sink),beautify_name(pad_src), label)
 
-def add_pad(pad_name, indent):
+def add_pad(pad, indent):
   body_indent = indent + indent;
-  print indent,'subgraph ',beautify_name(pad_name),'{'
+  print indent,'subgraph ',beautify_name(pad.name),'{'
   print body_indent,'label="";'
   print body_indent,'style="invis";'
-  if 'sink' in pad_name:
-    print body_indent,beautify_name(pad_name),'[color=black, fillcolor="#aaaaff", label="sink\\n[>][bfb]", height="0.2", style="filled,solid"];'
+  if pad.is_sink():
+    print body_indent,beautify_name(pad.name),'[color=black, fillcolor="#aaaaff", label="sink\\n[>][bfb]", height="0.2", style="filled,solid"];'
   else:
-    print body_indent,beautify_name(pad_name),'[color=black, fillcolor="#aaaaff", label="src\\n[>][bfb]", height="0.2", style="filled,solid"];'
+    print body_indent,beautify_name(pad.name),'[color=black, fillcolor="#aaaaff", label="src\\n[>][bfb]", height="0.2", style="filled,solid"];'
   print indent,'}'
 
 def add_element (element, parent_bin, indent):
@@ -110,6 +142,8 @@ def add_element (element, parent_bin, indent):
     print body_indent,'label="%s\\n[>]\\nparent=(GstPipeline) %s"' % (beautify_name(element.name), parent_bin.name)
     for p in get_pad_for_element(element):
       add_pad(p, indent + indent_char)
+      if p.is_src():
+        add_connection(p.name, p.peer_name, indent, p.pad_details)
 
     for el in get_elements_from_bin(element):
       add_element(el, element, indent + indent_char)
@@ -127,7 +161,7 @@ def create_subgraph(indent):
 #connection
 def create_connection(indent):
   for pad in g_pads:
-    add_connection(g_pads[pad], pad, indent)
+    add_connection(pad.peer_name, pad.name, indent)
 
 def format_gst_line(line):
     ansi_escape = re.compile(r'\x1b[^m]*m')
@@ -145,7 +179,10 @@ def parse_file(filename):
           tab = re.split(r'\t+', line)
           line = tab.pop()
           tab = line.split('and')
-          g_pads[tab[1].replace(', successful','').strip()] = tab[0].replace('linked','').strip()
+          name = tab[1].replace(', successful','').strip()
+          peer_name = tab[0].replace('linked','').strip()
+          g_pads.append(Pad(name, peer_name))
+          g_pads.append(Pad(peer_name, name))
       #get elements and bins
       mobj = re.match(r".*adding element.*", line)
       if mobj:
@@ -192,7 +229,7 @@ def show_elements():
 def show_pads():
   pads ='\\lpads:'
   for p in g_pads:
-      pads += '\\l%s -> %s' % (p,g_pads[p])
+      pads += '\\l%s -> %s' % (p.name,p.peer_name)
   return pads
 
 
@@ -233,5 +270,5 @@ print '\n'
 
 # create the graph
 create_subgraph('')
-create_connection('')
+#create_connection('')
 print '}'
