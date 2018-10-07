@@ -12,7 +12,7 @@ DEST_FILE=$2
 
 if [ -z $DEMUXER ]; then DEMUXER=qtdemux; fi
 if [ -z $PARSER ]; then PARSER=h264parse; fi
-if [ -z $OPTS ]; then OPTS=-v; fi
+if [ -z $GST_OPTS ]; then GST_OPTS=-v; fi
 if [ -z $PIPEPLINE_TYPE ]; then PIPEPLINE_TYPE=decodebin-mp3; fi
 if [ -z $GST_LAUNCH ]; then GST_LAUNCH="gst-launch-1.0"; fi
 if [ -z $DECODEBIN_ELEMENT ]; then DECODEBIN_ELEMENT="decodebin"; fi
@@ -42,7 +42,7 @@ case "$PIPEPLINE_TYPE" in
 
 
 decodebin-mp3) echo $TYPE
-    $GST_LAUNCH $OPTS filesrc location="$FILENAME" $SRC_OPTIONS ! $DECODEBIN_ELEMENT name=decoder decoder. ! queue ! fakesink decoder. ! queue ! audioconvert ! $ENCODER ! $SINK
+    $GST_LAUNCH $GST_OPTS filesrc location="$FILENAME" $SRC_OPTIONS ! $DECODEBIN_ELEMENT name=decoder decoder. ! queue ! fakesink decoder. ! queue ! audioconvert ! $ENCODER ! $SINK
 
     ;;
 
