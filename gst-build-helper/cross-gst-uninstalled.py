@@ -89,7 +89,6 @@ def get_subprocess_env(options):
                                                          'lib', 'girepository-1.0'))
     env["GST_OMX_CONFIG_DIR"] = os.path.join(PREFIX_DIR, 'etc', 'xdg')
 
-
     return env
 
 # https://stackoverflow.com/questions/1871549/determine-if-python-is-running-inside-virtualenv
@@ -154,10 +153,8 @@ def python_env(options, unset_env=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="gstreamer-uninstalled")
-
-    parser.add_argument("--builddir",
-                        default=DEFAULT_BUILDDIR,
-                        help="The meson build directory")
+    parser.add_argument('builddir', type=str,
+                            help='The meson build directory')
     parser.add_argument("--srcdir",
                         default=SCRIPTDIR,
                         help="The top level source directory")
