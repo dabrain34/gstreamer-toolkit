@@ -35,7 +35,8 @@ def get_toolchain_prefix(options):
     prefix = ''
     if options.cpu_family == "aarch64":
         prefix = 'aarch64-linux-gnu-'
-    elif options.target_arch == "arm":
+    else:
+      if options.target_arch == "arm":
         prefix = 'arm-linux-gnu-'
     return prefix
 
@@ -98,7 +99,7 @@ def _write_meson_cross_file (env, options):
     windres = env.get('WINDRES', '').split()
 
     # We do not use cmake dependency files, speed up the build by disabling it
-    cross_binaries = {'cmake': ['false']}
+    cross_binaries = {}
     if 'STRIP' in env:
         cross_binaries['strip'] = env['STRIP'].split()
     if 'WINDRES' in env:
@@ -174,7 +175,7 @@ if __name__ == "__main__":
                         help="The meson cross-file, default: 'my-meson-cross-file.txt'.")
     parser.add_argument("--toolchain-prefix", '-t',
                         default='',
-                        help="The toolchain prefix, default: ''.")
+                        help="The toolchain prefix such as 'arm-linux-gnueabi-', default: ''.")
     parser.add_argument("--custom-cflags", '-C',
                         default='',
                         help="The custom cflags from the toolchain, default: ''.")
