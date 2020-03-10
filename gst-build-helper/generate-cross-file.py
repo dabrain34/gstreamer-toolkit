@@ -7,6 +7,7 @@ import os
 import platform
 import shlex
 import subprocess
+import shutil
 
 MESON_CROSS_FILE_TPL = \
     '''
@@ -97,6 +98,13 @@ def get_subprocess_env(options):
     return env
 
 
+def check_binaries(bins):
+    for b in bins:
+        b = str(b[0])
+        if not shutil.which(b):
+            print("Cannot find '{}' you may have to update your PATH".format(b))
+
+
 def _write_meson_cross_file(env, options):
 
     cc = env['CC'].split()
@@ -104,6 +112,8 @@ def _write_meson_cross_file(env, options):
     ar = env['AR'].split()
     strip = env.get('STRIP', '').split()
     windres = env.get('WINDRES', '').split()
+
+    check_binaries([cc, cxx, ar, strip])
 
     # We do not use cmake dependency files, speed up the build by disabling it
     cross_binaries = {}
@@ -154,6 +164,8 @@ def _write_meson_cross_file(env, options):
     extra_binaries = ''
     for k, v in cross_binaries.items():
         extra_binaries += '{} = {}\n'.format(k, str(v))
+
+    check_binaries(cross_binaries.values())
 
     # Create a cross-info file that tells Meson and GCC how to cross-compile
     # this project
