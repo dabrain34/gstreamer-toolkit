@@ -7,9 +7,10 @@ import os
 import platform
 import shlex
 import subprocess
+import shutil
 
 MESON_CROSS_FILE_TPL = \
-'''
+    '''
 [host_machine]
 system = '{system}'
 cpu_family = '{cpu_family}'
@@ -29,16 +30,18 @@ pkgconfig = 'pkg-config'
 
 SCRIPTDIR = os.path.normpath(os.path.dirname(__file__))
 
+
 def get_toolchain_prefix(options):
     if options.toolchain_prefix != '':
-      return options.toolchain_prefix
+        return options.toolchain_prefix
     prefix = ''
     if options.cpu_family == "aarch64":
         prefix = 'aarch64-linux-gnu-'
     else:
-      if options.target_arch == "arm":
-        prefix = 'arm-linux-gnu-'
+        if options.target_arch == "arm":
+            prefix = 'arm-linux-gnu-'
     return prefix
+
 
 def get_cflags(options):
     cflags = ' -Wall -g -O2'
@@ -47,20 +50,23 @@ def get_cflags(options):
     cflags = cflags + ' ' + options.custom_cflags
     return cflags
 
+
 def get_ldflags(options):
     ldflags = ''
     if options.sysroot != '':
-      ldflags = '-L{}/lib -Wl,-rpath-link={}/lib'.format(options.sysroot, options.sysroot)
+        ldflags = '-L{}/lib -Wl,-rpath-link={}/lib'.format(
+            options.sysroot, options.sysroot)
 
     ldflags = ldflags + ' ' + options.custom_ldflags
     return ldflags
 
+
 def get_subprocess_env(options):
     env = os.environ.copy()
     prefix = get_toolchain_prefix(options)
-    cflags = get_cflags (options)
-    cxxflags = get_cflags (options)
-    ldflags = get_ldflags (options)
+    cflags = get_cflags(options)
+    cxxflags = get_cflags(options)
+    ldflags = get_ldflags(options)
     if options.use_clang:
         env['CC'] = 'clang'
         env['CXX'] = 'clang++'
@@ -84,19 +90,30 @@ def get_subprocess_env(options):
     env['OBJCFLAGS'] = cflags
     env['LDFLAGS'] = ldflags
     if options.sysroot != '':
-      env['PKG_CONFIG_LIBDIR'] = '{}/lib/pkgconfig:{}/usr/share/pkgconfig'.format(options.sysroot, options.sysroot)
+        env['PKG_CONFIG_LIBDIR'] = '{}/lib/pkgconfig:{}/usr/share/pkgconfig'.format(
+            options.sysroot, options.sysroot)
     else:
-      env['PKG_CONFIG_LIBDIR'] = '__no_cross_sysroot__'
+        env['PKG_CONFIG_LIBDIR'] = '__no_cross_sysroot__'
 
     return env
 
-def _write_meson_cross_file (env, options):
+
+def check_binaries(bins):
+    for b in bins:
+        b = str(b[0])
+        if not shutil.which(b):
+            print("Cannot find '{}' you may have to update your PATH".format(b))
+
+
+def _write_meson_cross_file(env, options):
 
     cc = env['CC'].split()
     cxx = env['CXX'].split()
     ar = env['AR'].split()
     strip = env.get('STRIP', '').split()
     windres = env.get('WINDRES', '').split()
+
+    check_binaries([cc, cxx, ar, strip])
 
     # We do not use cmake dependency files, speed up the build by disabling it
     cross_binaries = {}
@@ -108,7 +125,6 @@ def _write_meson_cross_file (env, options):
         cross_binaries['objc'] = env['OBJC'].split()
     if 'OBJCXX' in env:
         cross_binaries['objcpp'] = env['OBJCXX'].split()
-
 
     # *FLAGS are only passed to the native compiler, so while
     # cross-compiling we need to pass these through the cross file.
@@ -124,12 +140,12 @@ def _write_meson_cross_file (env, options):
     else:
         objc_link_args = c_link_args
     objcpp_link_args = objc_link_args
-    
+
     pkg_config_libdir = shlex.split(env.get('PKG_CONFIG_LIBDIR', ''))
 
     # Operate on a copy of the recipe properties to avoid accumulating args
     # from all archs when doing universal builds
-    cross_properties = {}#copy.deepcopy(self.meson_cross_properties)
+    cross_properties = {}  # copy.deepcopy(self.meson_cross_properties)
     for args in ('c_args', 'cpp_args', 'objc_args', 'objcpp_args',
                  'c_link_args', 'cpp_link_args', 'objc_link_args',
                  'objcpp_link_args', 'pkg_config_libdir'):
@@ -142,34 +158,38 @@ def _write_meson_cross_file (env, options):
     for k, v in cross_properties.items():
         extra_properties += '{} = {}\n'.format(k, str(v))
     if not options.no_include_sysroot:
-      extra_properties += '{} = \'{}\'\n'.format('sys_root', str(options.sysroot))
+        extra_properties += '{} = \'{}\'\n'.format(
+            'sys_root', str(options.sysroot))
 
     extra_binaries = ''
     for k, v in cross_binaries.items():
         extra_binaries += '{} = {}\n'.format(k, str(v))
 
+    check_binaries(cross_binaries.values())
+
     # Create a cross-info file that tells Meson and GCC how to cross-compile
     # this project
     cross_file = os.path.join(options.cross_file)
     contents = MESON_CROSS_FILE_TPL.format(
-            system=options.target_platform,
-            cpu=options.target_arch,
-            cpu_family=options.cpu_family,
-            # Assume all ARM sub-archs are in little endian mode
-            endian='little',
-            CC=cc,
-            CXX=cxx,
-            AR=ar,
-            extra_binaries=extra_binaries,
-            extra_properties=extra_properties)
+        system=options.target_platform,
+        cpu=options.target_arch,
+        cpu_family=options.cpu_family,
+        # Assume all ARM sub-archs are in little endian mode
+        endian='little',
+        CC=cc,
+        CXX=cxx,
+        AR=ar,
+        extra_binaries=extra_binaries,
+        extra_properties=extra_properties)
     with open(cross_file, 'w') as f:
         f.write(contents)
 
     return cross_file
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument("--cross-file", '-c',
                         default='my-meson-cross-file.txt',
                         help="The meson cross-file, default: 'my-meson-cross-file.txt'.")
@@ -204,10 +224,11 @@ if __name__ == "__main__":
                         help="dot not include sysroot in the cross file.")
 
     options = parser.parse_args()
-    
-    env = get_subprocess_env (options)
 
-    print("Creating meson cross file with file name '%s' and options:" % options.cross_file)
+    env = get_subprocess_env(options)
+
+    print("Creating meson cross file with file name '%s' and options:" %
+          options.cross_file)
     print("")
     print("\tsysroot: %s" % options.sysroot)
     print("\ttarget platform: %s" % options.target_platform)
@@ -218,5 +239,5 @@ if __name__ == "__main__":
     print("\tLDFLAGS: %s" % get_ldflags(options))
     print("")
 
-    cross_file = _write_meson_cross_file (env, options)
-    print("The cross file has been written correctly. You can now run 'meson configure --cross-file=%s'" %  cross_file)
+    cross_file = _write_meson_cross_file(env, options)
+    print("The cross file has been written correctly. You can now run 'meson configure --cross-file=%s'" % cross_file)
