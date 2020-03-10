@@ -191,8 +191,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--cross-file", '-c',
-                        default='my-meson-cross-file.txt',
-                        help="The meson cross-file, default: 'my-meson-cross-file.txt'.")
+                        help="The meson cross-file")
     parser.add_argument("--toolchain-prefix", '-t',
                         default='',
                         help="The toolchain prefix such as 'arm-linux-gnueabi-', default: ''.")
@@ -224,6 +223,14 @@ if __name__ == "__main__":
                         help="dot not include sysroot in the cross file.")
 
     options = parser.parse_args()
+
+    if options.cross_file is None:
+        if options.toolchain_prefix:
+            prefix = options.toolchain_prefix
+        else:
+            prefix = "{}-{}-".format(options.cpu_family,
+                                     options.target_platform)
+        options.cross_file = '{}meson-cross-file.txt'.format(prefix)
 
     env = get_subprocess_env(options)
 
