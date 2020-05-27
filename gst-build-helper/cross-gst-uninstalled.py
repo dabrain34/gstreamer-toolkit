@@ -63,6 +63,9 @@ def get_subprocess_env(options):
     env["GST_ENV"] = 'gst-' + options.gst_version
 
     env["GST_REGISTRY"] = os.path.normpath(options.builddir + "/registry.dat")
+    env["GST_PLUGIN_SCANNER"] = os.path.join(PREFIX_LOCAL_DIR,'libexec',
+                                             'gstreamer-1.0'
+                                             , 'gst-plugin-scanner')
 
     sharedlib_reg = re.compile(r'\.so|\.dylib|\.dll')
     typelib_reg = re.compile(r'.*\.typelib$')
