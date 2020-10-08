@@ -1,7 +1,10 @@
 easy_c_args = []
+fs = import('fs')
 if get_option('default_library') == 'static'
   gst_full_dep = dependency('gstreamer-full-1.0')
-  easy_c_args += ['-DGST_STATIC_COMPILATION']
+  if fs.exists('scripts/gstinitstaticplugins.h')
+    easy_c_args += ['-DGST_STATIC_COMPILATION']
+  endif
 else
   gst_full_dep = dependency('gstreamer-1.0',
     fallback : ['gstreamer', 'gst_dep'])
