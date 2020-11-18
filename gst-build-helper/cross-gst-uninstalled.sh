@@ -60,4 +60,5 @@ prepend GST_PLUGIN_PATH $BUILD_DIR/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
 set_path GST_OMX_CONFIG_DIR $BUILD_DIR/usr/local/etc/xdg
 
 set_path GST_PLUGIN_SCANNER=$BUILD_DIR/usr/local/libexec/gstreamer-1.0/gst-plugin-scanner
+set_path GST_DEBUG *:2
 /bin/sh

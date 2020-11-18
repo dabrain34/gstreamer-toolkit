@@ -92,6 +92,8 @@ def get_subprocess_env(options):
                                                          'lib', 'girepository-1.0'))
     env["GST_OMX_CONFIG_DIR"] = os.path.join(PREFIX_DIR, 'etc', 'xdg')
 
+    env['GST_DEBUG'] = '*:2'
+
     return env
 
 # https://stackoverflow.com/questions/1871549/determine-if-python-is-running-inside-virtualenv
