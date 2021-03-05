@@ -44,6 +44,7 @@ def get_toolchain_prefix(options):
 
 
 def get_cflags(options):
+    cflags = ''
     if options.target_arch == "armv7":
         cflags = ' -march=armv7-a '
     cflags = cflags + ' ' + options.custom_cflags
