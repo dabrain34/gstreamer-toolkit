@@ -125,6 +125,10 @@ def _write_meson_cross_file(env, options):
         cross_binaries['objc'] = env['OBJC'].split()
     if 'OBJCXX' in env:
         cross_binaries['objcpp'] = env['OBJCXX'].split()
+    if 'CMAKE' in env:
+        cross_binaries['cmake'] = env['CMAKE'].split()
+    else:
+        cross_binaries['cmake']  = ['false']
 
     # *FLAGS are only passed to the native compiler, so while
     # cross-compiling we need to pass these through the cross file.
