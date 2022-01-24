@@ -1,1 +1,2 @@
 option('tools', type: 'feature', value: 'auto')
+option('gstreamer-full', type: 'boolean', value: 'true')
