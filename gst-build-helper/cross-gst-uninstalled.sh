@@ -2,9 +2,14 @@
 
 BUILD_DIR=$1
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+PLATFORM=$2
 
 if [ -z $BUILD_DIR ]; then
 BUILD_DIR=$SCRIPT_DIR/build
+fi
+
+if [ -z $PLATFORM ]; then
+PLATFORM=x86_64-linux-gnu
 fi
 
 prepend()
@@ -52,10 +57,10 @@ prepend PATH $BUILD_DIR/usr/local/bin
 prepend LD_LIBRARY_PATH $BUILD_DIR/lib/
 prepend LD_LIBRARY_PATH $BUILD_DIR/usr/lib/
 prepend LD_LIBRARY_PATH $BUILD_DIR/usr/local/lib/
-prepend LD_LIBRARY_PATH $BUILD_DIR/usr/local/lib/x86_64-linux-gnu/
+prepend LD_LIBRARY_PATH $BUILD_DIR/usr/local/lib/$PLATFORM/
 
 set_path GST_PLUGIN_PATH $BUILD_DIR/usr/local/lib/gstreamer-1.0
-prepend GST_PLUGIN_PATH $BUILD_DIR/usr/local/lib/x86_64-linux-gnu/gstreamer-1.0
+prepend GST_PLUGIN_PATH $BUILD_DIR/usr/local/lib/$PLATFORM/gstreamer-1.0
 
 set_path GST_OMX_CONFIG_DIR $BUILD_DIR/usr/local/etc/xdg
 
