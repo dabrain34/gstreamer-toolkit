@@ -1,7 +1,5 @@
 #include <gst/gst.h>
-#ifdef GST_STATIC_COMPILATION
-#  include <gst/gstinitstaticplugins.h>
-#endif
+
 #ifdef G_OS_UNIX
 #include <glib-unix.h>
 #endif
@@ -224,9 +222,6 @@ main (int argc, char *argv[])
 
   gst_init (&argc, &argv);
 
-#ifdef GST_STATIC_COMPILATION
-  gst_init_static_plugins();
-#endif
   if (!elements)
     return 0;
 
