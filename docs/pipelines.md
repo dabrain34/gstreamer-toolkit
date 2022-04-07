@@ -77,3 +77,7 @@ gst-launch-1.0 -v rtpbin name=rtpbin \
                   rtpbin. ! rtpamrdepay ! amrnbdec ! pulsesink \
                   rtpbin.send_rtcp_src_0 ! udpsink  port=5007 sync=false async=false host=127.0.0.1
 ```
+
+# GES
+
+ges-launch-1.0 +clip ~/Documents/Medias/background.mp4 duration=3.0 -o ~/Documents/Medias/background.mp4
