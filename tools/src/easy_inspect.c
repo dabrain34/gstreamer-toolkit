@@ -41,6 +41,8 @@ static void display_elements ()
 int main(int argc, char *argv[])
 {
   gst_init (&argc, &argv);
-
+  #ifdef GST_INIT_STATIC_PLUGINS
+    gst_init_static_plugins ();
+  #endif
   display_elements();
 }

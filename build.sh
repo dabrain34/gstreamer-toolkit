@@ -1,0 +1,19 @@
+meson buildfull \
+--force-fallback-for=gstreamer-1.0,glib,libffi,pcre2 \
+-Dauto_features=disabled \
+-Dgstreamer-1.0:libav=disabled \
+-Dgstreamer-1.0:ugly=disabled \
+-Dgstreamer-1.0:ges=disabled \
+--default-library=static \
+-Dgstreamer-1.0:default_library=static \
+-Dgstreamer-1.0:rtsp_server=disabled \
+-Dgstreamer-1.0:gst-full-target-type=static_library \
+-Dgstreamer-1.0:tools=enabled \
+-Dgstreamer-1.0:tests=disabled \
+-Dglib:tests=false \
+-Djson-glib:tests=false \
+-Dgst-plugins-base:playback=enabled \
+-Dgst-plugins-base:app=enabled \
+-Dgst-plugins-bad:videoparsers=enabled \
+-Dgst-plugins-base:typefind=enabled \
+-Dgstreamer-1.0:gst-full-libraries='gstreamer-video-1.0, gstreamer-audio-1.0, gstreamer-app-1.0, gstreamer-codecparsers-1.0'

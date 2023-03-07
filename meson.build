@@ -3,22 +3,19 @@ project('gst-toolkit', 'c', 'cpp',
   meson_version: '>=0.54.0',
 )
 
-if get_option('gstreamer-full')
-  gst_full_dep = dependency('gstreamer-full-1.0', static: get_option('default_library') == 'static', required: false)
-  if not gst_full_dep.found()
-    gst_full_dep = dependency('gstreamer-1.0',
+
+gstreamer_full_dep = dependency('gstreamer-full-1.0', static: true, fallback: ['gstreamer-1.0'], required :false)
+if not gstreamer_full_dep.found()
+    gstreamer_full_dep = dependency('gstreamer-1.0',
       fallback : ['gstreamer', 'gst_dep'])
-  endif
-else
-  gst_full_dep = dependency('gstreamer-1.0',
-    fallback : ['gstreamer', 'gst_dep'])
 endif
+
 
 pkg = import('pkgconfig')
 
-if not get_option('tools').disabled()
-  subdir('tools')
-endif
+
+subdir('tools')
+
 
 tools = ['gst_ogg_player', 'gst_buffer_probe', 'gst_typefind']
 
@@ -29,7 +26,7 @@ foreach tool : tools
   executable(exe_name,
     src_file,
     install: true,
-    dependencies : [gst_full_dep],
+    dependencies : [gstreamer_full_dep],
   )
 endforeach
 
