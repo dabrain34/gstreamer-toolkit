@@ -18,4 +18,4 @@ if [ -z $FORMAT ]; then FORMAT=2; fi #2 is I420
 if [ -z $FRAMERATE ]; then FRAMERATE="30/1"; fi
 
 
-$GST_LAUNCH filesrc location=$FILENAME ! rawvideoparse width=$WIDTH height=$HEIGHT format=$FORMAT framerate=$FRAMERATE ! navseek hold-eos=true ! autovideosink
+$GST_LAUNCH filesrc location=$FILENAME ! rawvideoparse width=$WIDTH height=$HEIGHT format=$FORMAT framerate=$FRAMERATE ! videoconvert ! navseek hold-eos=true ! autovideosink
